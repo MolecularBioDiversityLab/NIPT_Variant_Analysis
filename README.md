@@ -1,6 +1,6 @@
 # GATK Short Variant Discovery Pipeline — NIPT Population Genetics
 
-A Snakemake workflow implementing the [GATK Best Practices](https://gatk.broadinstitute.org/hc/en-us/articles/360035535932) for germline short variant discovery, adapted for **non-invasive prenatal testing (NIPT) cell-free DNA data**. The pipeline processes raw sequencing reads end-to-end — from FASTQ to a cohort-level, VQSR-filtered VCF — enabling downstream population genetics analyses such as allele frequency estimation, ancestry inference, and variant burden studies across NIPT cohorts.
+A Snakemake workflow implementing the [GATK Best Practices](https://gatk.broadinstitute.org/hc/en-us/articles/360035535932) for germline short variant discovery, which we used for **non-invasive prenatal testing (NIPT) cell-free DNA data**. The pipeline processes raw sequencing reads end-to-end — from FASTQ to a cohort-level, VQSR-filtered VCF — enabling downstream population genetics analyses across NIPT cohorts.
 
 ---
 
