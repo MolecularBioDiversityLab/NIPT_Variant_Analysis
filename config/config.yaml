@@ -1,0 +1,98 @@
+# =============================================================================
+# config/config.yaml
+# GATK Germline Short Variant Discovery Pipeline — configuration
+# Edit all paths before running. Use absolute paths throughout.
+# =============================================================================
+
+# ---------------------------------------------------------------------------
+# Global settings
+# ---------------------------------------------------------------------------
+working_dir: "/path/to/working/directory"   # <-- SET THIS
+reference_genome: "/path/to/reference.fasta" # <-- SET THIS (must be BWA-indexed + GATK dict)
+num_threads: 16
+
+# ---------------------------------------------------------------------------
+# Tool paths (use tool name if already on PATH, otherwise full path)
+# ---------------------------------------------------------------------------
+tools:
+  fastqc:   "fastqc"
+  seqkit:   "seqkit"
+  bwa:      "bwa"
+  samtools: "samtools"
+  gatk:     "gatk"
+  fastp:    "fastp"
+
+# ---------------------------------------------------------------------------
+# Rule-specific I/O directories (relative to working_dir)
+# ---------------------------------------------------------------------------
+pre_qc:
+  input_dir:  "01.raw/00.fastq"
+  output_dir: "01.raw/01.qc"
+
+pre_stats:
+  input_dir:  "01.raw/00.fastq"
+  output_dir: "01.raw/02.stats"
+
+trim:
+  input_dir:   "01.raw/00.fastq"
+  output_dir:  "02.clean/00.fastq"
+  qc_threshold: 20               # Phred quality score cut-off for fastp (-q)
+
+post_qc:
+  input_dir:  "02.clean/00.fastq"
+  output_dir: "02.clean/01.qc"
+
+post_stats:
+  input_dir:  "02.clean/00.fastq"
+  output_dir: "02.clean/02.stats"
+
+alignment:
+  input_dir:  "02.clean/00.fastq"
+  output_dir: "03.alignment/00.bam"
+
+add_rg:
+  input_dir:  "03.alignment/00.bam"
+  output_dir: "03.alignment/00.bam"
+  rg_prefix:  "flowcell_lane"    # RGPU field — typically flowcell.lane (informational)
+
+index_bam:
+  input_dir: "03.alignment/00.bam"
+
+pre_bamstats:
+  input_dir:  "03.alignment/00.bam"
+  output_dir: "03.alignment/01.pre_stats"
+
+markduplicates:
+  input_dir:  "03.alignment/00.bam"
+  output_dir: "03.alignment/00.bam"
+
+post_bamstats:
+  input_dir:  "03.alignment/00.bam"
+  output_dir: "03.alignment/02.post_stats"
+
+haplotypecaller:
+  input_dir:  "03.alignment/00.bam"
+  output_dir: "04.variant_calling/00.gvcf"
+
+# ---------------------------------------------------------------------------
+# Joint genotyping (used by supporting_scripts/ — not by the Snakemake rules)
+# ---------------------------------------------------------------------------
+joint_genotyping:
+  interval_list:        "/path/to/interval.list"           # <-- SET THIS
+  genomicsdb_workspace: "04.variant_calling/01.genomicsdb"
+  output_vcf:           "04.variant_calling/02.genotyped/genotyped.vcf.gz"
+  batch_size:           50
+
+vqsr:
+  snp:
+    resources:
+      hapmap:  "/path/to/hapmap_3.3.hg38.vcf.gz"          # <-- SET THIS
+      omni:    "/path/to/1000G_omni2.5.hg38.vcf.gz"       # <-- SET THIS
+      g1000:   "/path/to/1000G_phase1.snps.high_confidence.hg38.vcf.gz"  # <-- SET THIS
+      dbsnp:   "/path/to/Homo_sapiens_assembly38.dbsnp138.vcf.gz"        # <-- SET THIS
+    ts_filter_level: 99.5
+  indel:
+    resources:
+      mills:   "/path/to/Mills_and_1000G_gold_standard.indels.hg38.vcf.gz"  # <-- SET THIS
+      dbsnp:   "/path/to/Homo_sapiens_assembly38.dbsnp138.vcf.gz"           # <-- SET THIS
+    ts_filter_level: 99.0
