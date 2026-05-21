@@ -21,6 +21,8 @@ tools:
   samtools: "samtools"
   gatk:     "gatk"
   fastp:    "fastp"
+  snpeff:   "snpEff"                                  # <-- SET THIS (e.g., "java -jar /path/to/snpEff.jar" or just "snpEff" if installed via conda)
+  table_annovar: "/path/to/annovar/table_annovar.pl"  # <-- SET THIS
 
 # ---------------------------------------------------------------------------
 # Rule-specific I/O directories (relative to working_dir)
@@ -98,3 +100,19 @@ vqsr:
       mills:   "/path/to/Mills_and_1000G_gold_standard.indels.hg38.vcf.gz"  # <-- SET THIS
       dbsnp:   "/path/to/Homo_sapiens_assembly38.dbsnp138.vcf.gz"           # <-- SET THIS
     ts_filter_level: 99.0
+
+# ---------------------------------------------------------------------------
+# Variant Annotation (SnpEff & ANNOVAR)
+# ---------------------------------------------------------------------------
+annotation:
+  output_dir: "05.annotation"
+  snpeff:
+    genome_version: "GRCh38.105"                 # <-- SET THIS (Hangi SnpEff db'sini indirdiyseniz)
+    data_dir: "/path/to/snpeff/data"             # <-- SET THIS
+  annovar:
+    humandb_dir: "/path/to/annovar/humandb"      # <-- SET THIS
+    buildver: "hg38"
+    # Aşağıdaki db'lerin `annotate_variation.pl` ile indirilmiş olması gerekir. 
+    # v155 için 'avsnp155', ClinVar 2023 için 'clinvar_20230210' vb.
+    protocols: "refGene,avsnp155,clinvar_20230210,gnomad312_genome"
+    operations: "g,f,f,f" # g: gene-based (refGene), f: filter-based (diğerleri)
