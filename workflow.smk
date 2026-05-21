@@ -46,6 +46,8 @@ rule all:
         expand(wd(config["haplotypecaller"]["output_dir"], "{sample}.g.vcf.gz"), sample=SAMPLES),
         # Joint genotyping + VQSR — final filtered VCF
         wd(config["vqsr"]["output_vcf"]),
+        # Final Annotated VCF (SnpEff + ANNOVAR)
+        wd(config["annotation"]["output_dir"], f"final_annotated.{config['annotation']['annovar']['buildver']}_multianno.vcf")
 
 
 # =============================================================================
@@ -303,12 +305,8 @@ rule haplotypecaller:
 
 # =============================================================================
 # JOINT GENOTYPING & VARIANT RECALIBRATION
-# Runs once after all per-sample GVCFs are ready.
 # =============================================================================
 
-# ---------------------------------------------------------------------------
-# Helper: build the sample-map file expected by GenomicsDBImport
-# ---------------------------------------------------------------------------
 rule make_sample_map:
     """Build a tab-separated sample_map from all per-sample GVCFs."""
     input:
@@ -479,4 +477,58 @@ rule apply_vqsr:
 
         # Remove intermediate SNP-only recalibrated VCF
         rm -f {params.tmp_vcf} {params.tmp_vcf}.tbi
+        """
+
+
+# =============================================================================
+# VARIANT ANNOTATION (SnpEff & ANNOVAR)
+# =============================================================================
+
+rule snpeff_annotation:
+    """Annotate variants functionally using SnpEff."""
+    input:
+        vcf = wd(config["vqsr"]["output_vcf"])
+    output:
+        vcf = wd(config["annotation"]["output_dir"], "final_filtered.snpeff.vcf")
+    params:
+        genome   = config["annotation"]["snpeff"]["genome_version"],
+        data_dir = config["annotation"]["snpeff"]["data_dir"]
+    log:
+        wd("logs", "annotation", "snpeff.log")
+    shell:
+        """
+        mkdir -p $(dirname {output.vcf})
+        {config[tools][snpeff]} \
+            -Xmx8g \
+            -dataDir {params.data_dir} \
+            {params.genome} \
+            {input.vcf} > {output.vcf} 2> {log}
+        """
+
+rule annovar_annotation:
+    """Further annotate the SnpEff output using ANNOVAR with dbSNP, ClinVar, and gnomAD."""
+    input:
+        vcf = wd(config["annotation"]["output_dir"], "final_filtered.snpeff.vcf")
+    output:
+        vcf = wd(config["annotation"]["output_dir"], f"final_annotated.{config['annotation']['annovar']['buildver']}_multianno.vcf"),
+        txt = wd(config["annotation"]["output_dir"], f"final_annotated.{config['annotation']['annovar']['buildver']}_multianno.txt")
+    params:
+        humandb   = config["annotation"]["annovar"]["humandb_dir"],
+        buildver  = config["annotation"]["annovar"]["buildver"],
+        protocols = config["annotation"]["annovar"]["protocols"],
+        ops       = config["annotation"]["annovar"]["operations"],
+        prefix    = wd(config["annotation"]["output_dir"], "final_annotated")
+    log:
+        wd("logs", "annotation", "annovar.log")
+    shell:
+        """
+        {config[tools][table_annovar]} {input.vcf} {params.humandb} \
+            -buildver {params.buildver} \
+            -out {params.prefix} \
+            -remove \
+            -protocol {params.protocols} \
+            -operation {params.ops} \
+            -nastring . \
+            -vcfinput \
+            2> {log}
         """
